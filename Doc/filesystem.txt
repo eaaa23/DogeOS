@@ -1,0 +1,15 @@
+DOGEFS:
+The first selector is contained no message.
+The second selector is a infomation area:
+
+QWORD [0x000]: Identifier #1
+    Must be all 0x5a
+
+WORD  [0x008]: SIPL Size (<=63)
+
+WORD  [0x00a]: SIPL Location (Logical Sector)
+
+DWORD [0x00c]: Empty
+
+DWORD [0x010]: FS size (sectors)
+

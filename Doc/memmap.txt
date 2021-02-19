@@ -1,0 +1,8 @@
+0x000000-0x0fffff:     16-bit area              1MB
+0x100000-0x10ffff:     GDT                      64KB
+0x110000-0x1107ff:     IDT                      2KB
+0x110800-0x11ffff:     System Stack             62KB
+0x120000-0x12ffff:     BootInfo                 64KB
+0x130000-0x13ffff:     System Settings          832KB
+0x200000-0x2fffff:     Memman                   1MB
+0x300000-0xffffff:     Main Kernel              13MB

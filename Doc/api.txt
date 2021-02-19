@@ -1,0 +1,272 @@
+API Calling Function:
+    INT 0x60
+Function Number: EDX
+
+ High 16 bit:       DX:
+ Function Class     Detail name
+[----------------] [----------------]
+H                EDX                L
+
+
+Function Class 0: Basic Service
+    void abscExit(int code)
+        // Exit the current task. Maybe run signed functions in abscSignExit()
+        call:
+            EDX = 0x00000000
+            EAX = code
+
+    int abscSignExit(void(*func)())
+        // similiar as "atexit()". At most sign 256 functions.
+        call:
+            EDX = 0x00000001
+            EBX = func
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, too much function signed (>256)
+
+    void abscSleep()
+        // Force order OS to switch to other tasks.
+        call:
+            EDX = 0x00000002
+
+
+Function Class 1: Memory Service
+    void* amemMalloc(unsigned int size)
+        // Alloc free spaces in current data segment, or OS try to extent the data segment.
+        call:
+            EDX = 0x00010000
+            EAX = size
+        ret:
+            EBX = addr
+                addr = 0, failed
+                addr != 0, success
+
+    int amemFree(void* addr, unsigned int size)
+        // Free allocated memory.
+        call:
+            EDX = 0x00010001
+            EBX = addr
+            EAX = size
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, too scattered free spaces
+
+    int amemXalloc(void* addr, unsigned int extended_size)
+        // Extend allocated memory
+        call:
+            EDX = 0x00010002
+            EBX = addr
+            EAX = extended_size
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, failed
+
+    unsigned int amemSysAlloc(unsigned int size)
+        // Allocate memory that is not from the program's data segment, then get a handle.
+        call:
+            EDX = 0x00010003
+            EAX = size
+        ret:
+            EAX = handle
+                handle = 0, failed
+                handle != 0, success
+
+    unsigned int amemSysGet(unsigned int handle, unsigned int index, unsigned int data_type)
+        // Get Data from SysAlloc space
+        call:
+            EDX = 0x00010004
+            EAX = handle
+            EBX = index
+            ECX = data_type(1=Byte, 2=Word, 4=DWord)
+        return:
+            EAX = result
+            ECX = errnum
+                errnum = 0: success
+                errnum = 1: index out of range
+                errnum = 2: invalid handle
+
+    unsigned int amemSysSet(unsigned int handle, unsigned int index, unsigned int data_type)
+        // Get Data from SysAlloc space
+        call:
+            EDX = 0x00010005
+            EAX = handle
+            EBX = index
+            ECX = data_type(1=Byte, 2=Word, 4=DWord)
+        return:
+            EAX = errnum
+                errnum = 0: success
+                errnum = 1: index out of range
+                errnum = 2: invalid handle
+
+    unsigned int amemSysFree(unsigned int handle)
+        // Free spaces from SysAlloc()
+        call:
+            EDX = 0x00010006
+            EAX = handle
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, invalid handle
+
+    unsigned int amemSysLoad(unsigned int handle, unsigned int start_idx, unsigned int size, void* buffer)
+        // Copy a size of data from SysAlloc space to program data segment space
+        call:   
+            EDX = 0x00010007
+            EAX = handle
+            EBX = start_idx
+            ECX = size
+            ESI = buffer
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, invalid handle
+                errnum = 2, SysAlloc space out of range
+                errnum = 4, Buffer space out of data segment range
+                (2,4 can overlay)
+
+    unsigned int amemSysStore(unsigned int handle, unsigned int start_idx, unsigned int size, const void* buffer)
+        // Copy a size of data from SysAlloc space to program data segment space
+        call:   
+            EDX = 0x00010008
+            EAX = handle
+            EBX = start_idx
+            ECX = size
+            ESI = buffer
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, invalid handle
+                errnum = 2, SysAlloc space out of range
+                errnum = 4, Buffer space out of data segment range
+                (2,4 can overlay)
+
+
+Function Class 2: FileSystem Service
+    unsigned int aflsExistsFile(const char* path)
+        // Check a file is exists or not.
+        call:
+            EDX = 0x00020000
+            EBX = path
+        ret:
+            EAX = exists
+                exists = 0: not exist
+                exists = 1: exists
+
+    unsigned int aflsExistsDir(const char* pth)
+        // Check a directory is exists or not.
+        call:
+            EDX = 0x00020001
+            EBX = path
+        ret:
+            EAX = exists
+                exists = 0: not exist
+                exists = 1: exists
+
+    unsigned int aflsCheckDirTotalElements(const char* path)
+        // Check a how much elements are there in the directory.
+        call:
+            EDX = 0x00020002
+            EBX = path
+        ret:
+            EAX = total_elements
+                total_elements < 0x7fffffff: OK
+                total_elements = 0xffffffff: File not exists
+                total_elements = 0xfffffffe: Permission Denied
+
+    unsigned int aflsListDir(const char* path, char* store_destination, int max_store_char)
+        // List a directory elements. Result will be splitted by the '\0' character and stored to the store_destination.
+        call:
+            EDX = 0x00020003
+            EBX = path
+            EDI = store_destination
+            ECX = max_store_char
+        ret:
+            ECX = real_stored_char
+                real_stored_char >= 0, success
+                real_stored_char = -1, directory not found
+                real_stored_char = -2, permission denied
+
+    unsigned int aflsStatus(const char* path, void* dest)
+        // Check a property of a file or directory.
+        call:
+            EDX = 0x00020004
+            EBX = path
+            EDI = dest
+        ret:
+            DWORD dest[ 0]: size granularity (1=SMALLFILE(<4GB), 4096=LARGEFILE(<16TB), 16777216=XLARGEFILE(<64PB))
+            DWORD dest[ 4]: create time
+            DWORD dest[ 8]: last read time
+            DWORD dest[12]: last write time
+            DWORD dest[16]: file size(multiply with granularity)
+            BYTE  dest[20]: is_exists
+            BYTE  dest[21]: is_directory(0) or is_file(1)
+            BYTE  dest[22]: minimum read/execute(file) or listdir/operatesub(dir) permission
+            BYTE  dest[23]: minimum append(file) or create_new(dir) permission
+            BYTE  dest[24]: minimum write/delete(file) or deletesub(dir) permission
+
+    unsigned int aflsCreateNewFile(const char* path)
+        // Create a new file in an exist directory.
+        call:
+            EDX = 0x00020005
+            EBX = path
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, parent directory not found
+                errnum = 2, permission denied
+
+    unsigned int aflsCreateNewDir(const char* path)
+        // Create a new directory in an exist directory.
+        call:
+            EDX = 0x00020006
+            EBX = path
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, parent directory not found
+                errnum = 2, permission denied
+
+    unsigned int aflsDeleteFile(const char* path)
+        // Delete an exist file.
+        call:
+            EDX = 0x00020007
+            EBX = path
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, file not found
+                errnum = 2, permission denied
+
+    unsigned int aflsDeleteDir(const char* path, unsigned int do_empty_check)
+        // Delete a directory.
+        call:
+            EDX = 0x00020008
+            EBX = path
+            EAX = do_empty_check
+        ret:
+            EAX = errnum
+                errnum = 0, success
+                errnum = 1, file not found
+                errnum = 2, permission denied
+                errnum = 3, directory not empty (do_empty_check=1 only)
+
+
+Function Class 3: File Service
+    unsigned int afleOpenFile(const char* path, )
+        // Open a file.
+        call:
+            EDX = 0x00030000
+            EBX = path
+        ret:
+            EAX = handle
+                handle <= 0x7ffffffff, success
+                handle = 0xffffffff, not found
+                handle = 0xfffffffe, permission denied
+
+    unsigned int afle
+
+
+
