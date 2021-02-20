@@ -1,6 +1,7 @@
 CC = gcc \
 	-I ./src \
-    -m32
+    -m32 \
+	-O2
 PYTHON = python3
 ASM = nasm
 AS = as --32

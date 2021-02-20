@@ -152,10 +152,10 @@ GDT0:
     DB 0xcf    ; AR 9-12(0xc) and limit 16-20(0xf)
     DB 0x00    ; base 24-31
     ; GDT 3: SIPL-C Code Segment, AR: 0100(G=1B,D=32) 10011010(0x9a,ring0-ER-NoWrite)
-    ;        0x000f0000-0x000fffff, limit: 0x0ffff
+    ;        0x00080000-0x0008ffff, limit: 0x0ffff
     DW 0xffff  ; limit 0-15
     DW 0x0000  ; base 0-15
-    DB 0x0f    ; base 16-23
+    DB 0x08    ; base 16-23
     DB 0x9a    ; AR 0-8
     DB 0x40    ; AR 9-12(0x4) and limit 16-20(0x0)
     DB 0x00    ; base 24-31
@@ -164,6 +164,26 @@ GDTR0:
     DD GDT0
 
 skipgdt:
+    ;MOV AX,0x8000
+    ;MOV GS,AX
+    ;MOV SI,enter_c
+    ;MOV DI,0
+    ;MOV DX,SI
+    ;CALL func_printhex
+    ;MOV ECX,0
+    ;.copyloop:
+    ;    MOV AL,[CS:SI]
+    ;    MOV [GS:DI],AL
+    ;    ADD SI,1
+     ;   ADD DI,1
+    ;    CMP DI,0
+    ;    JNE .copyloop
+    ;MOV DX,[CS:enter_c+0x344]
+    ;CALL func_printhex
+    ;MOV DX,[GS:0x344]
+    ;CALL func_printhex
+    ;JMP fin
+
     CLI
     CALL func_waitkbdout
     MOV AL,0xd1
@@ -371,21 +391,20 @@ start32:
     ;CMP ECX,0xffff
     ; Copy enter_c to 0xf0000-0xfffff
     MOV ESI,enter_c
-    MOV EDI,0xf0000
-    MOV ECX,0x4000   ; 0x10000
+    MOV EDI,0x80000
+    MOV ECX,0x4000 ; 0x10000
     ;MOV ECX,0
     .copyloop:
         MOV EAX,[ESI]
         MOV [EDI],EAX
-        ADD ESI,4
-        ADD EDI,4
-        DEC ECX
-        CMP ECX,0
-        JNE .copyloop
+        INC ESI
+        INC EDI
+        SUB ECX,1
+        JNZ .copyloop
     ;HLT
-    JMP DWORD enter_c
-    ;JMP 3*8:0
-    ;JMP 0xf0000
+    ;JMP DWORD enter_c
+    JMP 3*8:0
+    ;JMP DWORD 0x80000
 
 func32_memcpy:
     ; ESI = source, EDI = dest, ECX = total(unit:DWORD)
@@ -407,4 +426,5 @@ func32_memcpy:
     POP EAX
     RET
 
+ALIGN 8
 enter_c:
