@@ -9,7 +9,10 @@ WORD  [0x008]: SIPL Size (<=63)
 
 WORD  [0x00a]: SIPL Location (Logical Sector)
 
-DWORD [0x00c]: Empty
+DWORD [0x00c]: FS size (sectors) low 32 bits
 
-DWORD [0x010]: FS size (sectors)
+WORD  [0x010]: FS size (sectors) high 16 bits
 
+WORD  [0x012]: Operating system size (sectors)
+
+DWORD [0x014]: Operating system location (Logical sector)
