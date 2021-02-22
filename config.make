@@ -1,7 +1,8 @@
 CC = gcc \
 	-I ./src \
     -m32 \
-	-O2
+	-O2 \
+	-nostdlib
 PYTHON = python3
 ASM = nasm
 AS = as --32

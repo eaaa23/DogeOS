@@ -72,9 +72,9 @@ printloop:
 
 
 
-    JMP scrn320
+
     ; set up video mode:
-    VBEMODE	EQU		0x118			; 1024x768x32
+    VBEMODE	EQU		0x115			; 1024x768x32
     ; VBE mode
     ;   0x100  :  640 x  400 x 8bit
     ;   0x101  :  640 x  480 x 8bit
@@ -108,13 +108,20 @@ printloop:
     MOV BX,VBEMODE+0x4000
     MOV AX,0x4f02
     INT 0x10
-    MOV BYTE[FS:VMODE],32
+    MOV AX,0
+    MOV AL,[ES:DI+0x19]
+    MOV [FS:VMODE],AX
     MOV AX,[ES:DI+0x12]
     MOV [FS:SCRNX],AX
     MOV AX,[ES:DI+0x14]
     MOV [FS:SCRNY],AX
     MOV EAX,[ES:DI+0x28]
     MOV [FS:VRAM],EAX
+
+    MOV DX,[FS:VMODE]
+    CALL func_printhex
+    JMP $
+
     JMP enter32
 
 scrn320:
@@ -393,18 +400,21 @@ start32:
     MOV ESI,enter_c
     MOV EDI,0x80000
     MOV ECX,0x4000 ; 0x10000
-    ;MOV ECX,0
-    .copyloop:
-        MOV EAX,[ESI]
-        MOV [EDI],EAX
-        INC ESI
-        INC EDI
-        SUB ECX,1
-        JNZ .copyloop
-    ;HLT
-    ;JMP DWORD enter_c
+    CALL func32_memcpy
+
+    MOV EBX,[0x1f006]  ; VRAM
+    ;MOV DWORD[EBX],0x00ffffff
+    ;MOV DWORD[EBX+4],0x00ff0000
+    ;JMP $
+
+    MOV EBX,0x20000  ; The FS Info
+    MOV DX,[EBX+0x12]  ; OS Size
+    MOV EAX,[EBX+0x14] ; OS Location
+
+
+
+
     JMP 3*8:0
-    ;JMP DWORD 0x80000
 
 func32_memcpy:
     ; ESI = source, EDI = dest, ECX = total(unit:DWORD)

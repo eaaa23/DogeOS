@@ -53,13 +53,13 @@ org 0x7c00
 
 ; Booting system
 
-    ; First, read C0-H0-S2 to 0x7e00
+    ; First, read C0-H0-S2 to 0x20000
 
     MOV CH,0          ; C
     MOV DH,0          ; H
     MOV CL,2          ; S
     MOV DL,[diskid]   ; diskid
-    MOV BX,0x7e0
+    MOV BX,0x2000
     MOV ES,BX
     MOV BX,0
     MOV AL,1
@@ -127,6 +127,8 @@ tryloop:
     INT 0x13
     MOV AH,0x02
     MOV AL,1
+    MOV BX,0
+    MOV ES,BX
     MOV BX,0x7e00
     MOV CL,[sipl_sector]
     MOV DH,[sipl_head]
